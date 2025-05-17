@@ -2,7 +2,7 @@
 set -e
 
 echo "Step 1: Download and preprocess dataset"
-python utils/download_dataset.py
+python utils/download_data.py
 python utils/preprocess.py
 
 echo "Step 2: Pre-train the model"
