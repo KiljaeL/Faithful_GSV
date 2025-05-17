@@ -1,69 +1,6 @@
 import numpy as np
 from scipy.stats import hypergeom
 
-def FGSV(U, n, S_list, alpha, d, S0, neval, nsave, thres = 5):
-    s0 = len(S0)
-    isave = 0
-
-    linear_term = s0/n * (U(np.arange(n), S_list, alpha, d) - U(np.array([]), S_list, alpha, d))
-    num_eval = 2
-    
-    Ts = np.zeros(n-1)
-    counts = np.zeros(n-1)
-    fgsv_hat_save = np.zeros(nsave)
-
-    
-    while num_eval < neval:
-        s = np.random.randint(1, n)
-        s1_min = max(0, s0 + s - n)
-        s1_max = min(s0, s)
-        Es1 = round(s0 * s / n)
-            
-        if s < thres:
-            Ts_temp = 0
-            for s1 in range(s1_min, s1_max + 1):
-                S1 = np.random.choice(S0, s1, replace=False)
-                S_minus_S1 = np.random.choice(np.setdiff1d(np.arange(n), S0), s-s1, replace=False)
-                S = np.concatenate((S1, S_minus_S1))
-                Ts_temp += hypergeom.pmf(s1, n, s0, s) * (s1 - s * s0 / n) * U(S, S_list, alpha, d)
-                num_eval += 1
-                
-            Ts[s-1] = (counts[s-1] / (counts[s-1] + 1)) * Ts[s-1] + Ts_temp / (counts[s-1] + 1)
-            counts[s-1] += 1
-            
-        else:
-            if Es1 + 1 <= s1_max and Es1 - 1 >= s1_min:
-                central_ind = True
-                S1_temp = np.random.choice(S0, Es1 + 1, replace=False)
-                S_minus_S1_temp = np.random.choice(np.setdiff1d(np.arange(n), S0), s - Es1 + 1, replace=False)
-                S_upper = np.concatenate((S1_temp, S_minus_S1_temp[0:(s-Es1-1)]))
-                S_lower = np.concatenate((S1_temp[0:(Es1-1)], S_minus_S1_temp))
-                
-            elif Es1 + 1 <= s1_max:
-                central_ind = False
-                S1_temp = np.random.choice(S0, Es1 + 1, replace=False)
-                S_minus_S1_temp = np.random.choice(np.setdiff1d(np.arange(n), S0), s - Es1, replace=False)
-                S_upper = np.concatenate((S1_temp, S_minus_S1_temp[0:(s-Es1-1)]))
-                S_lower = np.concatenate((S1_temp[0:Es1], S_minus_S1_temp))
-                
-            elif Es1 - 1 >= s1_min:
-                central_ind = False
-                S1_temp = np.random.choice(S0, Es1, replace=False)
-                S_minus_S1_temp = np.random.choice(np.setdiff1d(np.arange(n), S0), s - Es1 + 1, replace=False)
-                S_upper = np.concatenate((S1_temp, S_minus_S1_temp[0:(s-Es1)]))
-                S_lower = np.concatenate((S1_temp[0:(Es1-1)], S_minus_S1_temp))
-                
-            Ts[s-1] = (counts[s-1] / (counts[s-1] + 1)) * Ts[s-1] + s0/n * (1-s0/n) * (U(S_upper, S_list, alpha, d) - U(S_lower, S_list, alpha, d)) / (central_ind + 1) / (counts[s-1] + 1)
-            counts[s-1] += 1
-            num_eval += 2
-            central_ind = False
-        
-        if num_eval // (neval // nsave) == isave + 1:
-            fgsv_hat_save[isave] = linear_term + np.sum(Ts)
-            isave += 1
-
-    return fgsv_hat_save
-
 def permutation(U, n, S_list, alpha, d, neval, nsave):
     isave = 0
     sv_hat_save = np.zeros((n, nsave))
@@ -402,3 +339,66 @@ def leverage_shap(U, n, S_list, alpha, d, neval, nsave, var_red = True):
             isave += 1
             
     return sv_hat_save
+
+def FGSV(U, n, S_list, alpha, d, S0, neval, nsave, thres = 5):
+    s0 = len(S0)
+    isave = 0
+
+    linear_term = s0/n * (U(np.arange(n), S_list, alpha, d) - U(np.array([]), S_list, alpha, d))
+    num_eval = 2
+    
+    Ts = np.zeros(n-1)
+    counts = np.zeros(n-1)
+    fgsv_hat_save = np.zeros(nsave)
+
+    
+    while num_eval < neval:
+        s = np.random.randint(1, n)
+        s1_min = max(0, s0 + s - n)
+        s1_max = min(s0, s)
+        Es1 = round(s0 * s / n)
+            
+        if s < thres:
+            Ts_temp = 0
+            for s1 in range(s1_min, s1_max + 1):
+                S1 = np.random.choice(S0, s1, replace=False)
+                S_minus_S1 = np.random.choice(np.setdiff1d(np.arange(n), S0), s-s1, replace=False)
+                S = np.concatenate((S1, S_minus_S1))
+                Ts_temp += hypergeom.pmf(s1, n, s0, s) * (s1 - s * s0 / n) * U(S, S_list, alpha, d)
+                num_eval += 1
+                
+            Ts[s-1] = (counts[s-1] / (counts[s-1] + 1)) * Ts[s-1] + Ts_temp / (counts[s-1] + 1)
+            counts[s-1] += 1
+            
+        else:
+            if Es1 + 1 <= s1_max and Es1 - 1 >= s1_min:
+                central_ind = True
+                S1_temp = np.random.choice(S0, Es1 + 1, replace=False)
+                S_minus_S1_temp = np.random.choice(np.setdiff1d(np.arange(n), S0), s - Es1 + 1, replace=False)
+                S_upper = np.concatenate((S1_temp, S_minus_S1_temp[0:(s-Es1-1)]))
+                S_lower = np.concatenate((S1_temp[0:(Es1-1)], S_minus_S1_temp))
+                
+            elif Es1 + 1 <= s1_max:
+                central_ind = False
+                S1_temp = np.random.choice(S0, Es1 + 1, replace=False)
+                S_minus_S1_temp = np.random.choice(np.setdiff1d(np.arange(n), S0), s - Es1, replace=False)
+                S_upper = np.concatenate((S1_temp, S_minus_S1_temp[0:(s-Es1-1)]))
+                S_lower = np.concatenate((S1_temp[0:Es1], S_minus_S1_temp))
+                
+            elif Es1 - 1 >= s1_min:
+                central_ind = False
+                S1_temp = np.random.choice(S0, Es1, replace=False)
+                S_minus_S1_temp = np.random.choice(np.setdiff1d(np.arange(n), S0), s - Es1 + 1, replace=False)
+                S_upper = np.concatenate((S1_temp, S_minus_S1_temp[0:(s-Es1)]))
+                S_lower = np.concatenate((S1_temp[0:(Es1-1)], S_minus_S1_temp))
+                
+            Ts[s-1] = (counts[s-1] / (counts[s-1] + 1)) * Ts[s-1] + s0/n * (1-s0/n) * (U(S_upper, S_list, alpha, d) - U(S_lower, S_list, alpha, d)) / (central_ind + 1) / (counts[s-1] + 1)
+            counts[s-1] += 1
+            num_eval += 2
+            central_ind = False
+        
+        if num_eval // (neval // nsave) == isave + 1:
+            fgsv_hat_save[isave] = linear_term + np.sum(Ts)
+            isave += 1
+
+    return fgsv_hat_save

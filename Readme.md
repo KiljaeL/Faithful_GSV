@@ -13,7 +13,7 @@ This repository contains the implementation of the paper **"Faithful Group Shapl
   - `seaborn==0.13.2`
   - `tqdm==4.67.1`
   - `scikit-learn==1.6.1`
-  - `torch==2.6.0+cu124` *(required only for Section 4.2)*
+  - `torch==2.6.0+cu124`
   - `peft==0.14.0`
 
 Install the required dependencies using:
