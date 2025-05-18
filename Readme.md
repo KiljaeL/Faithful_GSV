@@ -1,6 +1,6 @@
-# Faithful Group Shapley Value Estimation
+# Faithful Group Shapley Value
 
-This repository contains the implementation of the paper **"Faithful Group Shapley Value Estimation"**, submitted to NeurIPS 2025 main track.
+This repository contains the code for reproducing the numerical results in **"Faithful Group Shapley Value"**.
 
 ## Requirements
 
